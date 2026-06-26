@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime
-from math import isnan
-
+from datetime import date
 import numpy as np
 import pandas as pd
 
-from .config import DEFAULT_ELO, LABEL_TO_ID, RECENT_WINDOWS
+from .config import LABEL_TO_ID, RECENT_WINDOWS
 from .elo import EloRatings
 
 
@@ -208,24 +206,29 @@ def _update_state_for_match(
     state.h2h[key].append((away_team, away_label, away_goal_diff))
 
 
-def build_training_frame(matches: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, list[str], FeatureState]:
+def build_training_frame_with_scores(
+    matches: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.Series, pd.Series, list[str], FeatureState]:
     state = FeatureState()
     rows: list[dict[str, float]] = []
     targets: list[int] = []
+    score_targets: list[float] = []
 
     sorted_matches = matches.sort_values("date").reset_index(drop=True)
     for _, match in sorted_matches.iterrows():
+        home_score = int(match["home_score"])
+        away_score = int(match["away_score"])
         shootout_winner = match.get("shootout_winner")
         home_label = label_from_scores(
-            int(match["home_score"]),
-            int(match["away_score"]),
+            home_score,
+            away_score,
             str(match["home_team"]),
             str(match["away_team"]),
             shootout_winner,
         )
         away_label = label_from_scores(
-            int(match["away_score"]),
-            int(match["home_score"]),
+            away_score,
+            home_score,
             str(match["away_team"]),
             str(match["home_team"]),
             shootout_winner,
@@ -246,6 +249,7 @@ def build_training_frame(matches: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series
             )
         )
         targets.append(LABEL_TO_ID[home_label])
+        score_targets.append(float(home_score))
         rows.append(
             build_feature_row(
                 state,
@@ -257,11 +261,23 @@ def build_training_frame(matches: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series
             )
         )
         targets.append(LABEL_TO_ID[away_label])
+        score_targets.append(float(away_score))
         _update_state_for_match(state, match, home_label, away_label)
 
     frame = pd.DataFrame(rows).fillna(0.0)
     feature_names = list(frame.columns)
-    return frame, pd.Series(targets, name="target"), feature_names, state
+    return (
+        frame,
+        pd.Series(targets, name="target"),
+        pd.Series(score_targets, name="goals_scored"),
+        feature_names,
+        state,
+    )
+
+
+def build_training_frame(matches: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, list[str], FeatureState]:
+    frame, target, _, feature_names, state = build_training_frame_with_scores(matches)
+    return frame, target, feature_names, state
 
 
 def build_prediction_features(
@@ -275,7 +291,7 @@ def build_prediction_features(
     match_date: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     if match_date is None:
-        match_date = pd.Timestamp(datetime.utcnow().date())
+        match_date = pd.Timestamp(date.today())
     row = build_feature_row(
         state,
         team=team_a,

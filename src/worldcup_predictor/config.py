@@ -6,6 +6,7 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DATA_CACHE_DIR = PACKAGE_ROOT / "data_cache"
 ARTIFACT_DIR = PACKAGE_ROOT / "artifacts"
 MODEL_PATH = ARTIFACT_DIR / "xgb_model.joblib"
+SCORE_MODEL_PATH = ARTIFACT_DIR / "xgb_score_model.joblib"
 METADATA_PATH = ARTIFACT_DIR / "metadata.joblib"
 
 RESULTS_URL = (

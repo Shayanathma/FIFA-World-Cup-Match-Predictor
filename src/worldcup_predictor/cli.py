@@ -21,6 +21,17 @@ def _print_prediction(result: dict[str, float]) -> None:
     for label, probability in rows:
         print(f"{label:<28} {probability * 100:6.1f}%")
     print("-" * 56)
+    print(f"{team_a} expected goals{'':<7} {result['team_a_expected_goals']:6.2f}")
+    print(f"{team_b} expected goals{'':<7} {result['team_b_expected_goals']:6.2f}")
+    print(
+        "Predicted score"
+        f"{'':<13} {team_a} {result['likely_team_a_goals']}"
+        f"-{result['likely_team_b_goals']} {team_b}"
+    )
+    print(
+        f"Score probability{'':<11} {result['likely_score_probability'] * 100:.1f}%"
+    )
+    print("-" * 56)
     print(f"PICK: {pick_label} ({pick_probability * 100:.1f}%)")
     print("=" * 56)
 
@@ -74,8 +85,9 @@ def main(argv: list[str] | None = None) -> int:
             "Trained on "
             f"{result.rows} team-perspective rows. "
             f"Removed {result.removed_missing_scores} rows with missing scores. "
-            f"Validation accuracy: {result.accuracy:.3f}. "
-            f"Log loss: {result.log_loss:.3f}."
+            f"Classifier accuracy: {result.accuracy:.3f}. "
+            f"Classifier log loss: {result.log_loss:.3f}. "
+            f"Score MAE: {result.score_mae:.3f}."
         )
         return 0
 

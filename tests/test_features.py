@@ -2,7 +2,11 @@ import pandas as pd
 
 from worldcup_predictor.config import LABEL_TO_ID
 from worldcup_predictor.data import filter_missing_scores
-from worldcup_predictor.features import build_training_frame, label_from_scores
+from worldcup_predictor.features import (
+    build_training_frame,
+    build_training_frame_with_scores,
+    label_from_scores,
+)
 
 
 def test_label_uses_score_before_shootout():
@@ -54,6 +58,29 @@ def test_training_frame_builds_mirrored_rows_and_targets():
     assert target.iloc[0] == LABEL_TO_ID["win"]
     assert target.iloc[1] == LABEL_TO_ID["loss"]
     assert state.elo.get("A") != 1500
+
+
+def test_training_frame_with_scores_uses_team_perspective_goals():
+    matches = pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp("2020-01-01"),
+                "home_team": "A",
+                "away_team": "B",
+                "home_score": 3,
+                "away_score": 1,
+                "tournament": "Friendly",
+                "city": "City",
+                "country": "Country",
+                "neutral": False,
+                "shootout_winner": None,
+            },
+        ]
+    )
+
+    _, _, score_target, _, _ = build_training_frame_with_scores(matches)
+
+    assert list(score_target) == [3.0, 1.0]
 
 
 def test_filter_missing_scores_removes_rows_before_feature_generation():

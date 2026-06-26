@@ -1,6 +1,6 @@
 # ⚽️ FIFA World Cup 2026 Match Prediction System
 
-A machine learning-based international football match predictor that uses Elo ratings, historical match results, and XGBoost to estimate win, draw, and loss probabilities for FIFA World Cup-style fixtures.
+A machine learning-based international football match predictor that uses Elo ratings, historical match results, XGBoost classification, and XGBoost score regression to estimate win/draw/loss probabilities and likely scorelines for FIFA World Cup-style fixtures.
 
 > **Project Status:** In Progress  
 > This project is actively being developed and improved. New features, additional data sources, model enhancements, and evaluation methods are being added as the project evolves.
@@ -12,6 +12,8 @@ A machine learning-based international football match predictor that uses Elo ra
 - Head-to-head statistics
 - Tournament and venue context features
 - XGBoost multiclass classifier
+- XGBoost score regressor for expected goals
+- Poisson score matrix for most likely scoreline
 - Chronological training pipeline to prevent future-data leakage
 - Command-line interface for training and match prediction
 
@@ -63,16 +65,21 @@ Output:
 ```text
 Argentina vs Austria
 
-Argentina win  75.5%
-Draw           12.2%
-Austria win    12.3%
+Argentina win  78.8%
+Draw           11.7%
+Austria win     9.5%
 
-PICK: Argentina win (75.5%)
+Argentina expected goals  2.34
+Austria expected goals    0.76
+Predicted score         Argentina 2-1 Austria
+Score probability         12.3%
+
+PICK: Argentina win (78.8%)
 ```
 
 ## Model
 
-Version 1 uses:
+Version 2 uses:
 
 - Historical international match results (`results.csv`)
 - Penalty shootout winners (`shootouts.csv`) to adjust knockout draws into wins/losses
@@ -84,13 +91,18 @@ Version 1 uses:
 - Venue context
 - Tournament context
 - `xgboost.XGBClassifier` for Team A Win / Draw / Team B Win prediction
+- `xgboost.XGBRegressor` for team-perspective goals scored
+- A Poisson probability distribution for score prediction
+
+The classifier and regressor reuse the same feature engineering and chronological train/test split. During prediction, the same score regressor predicts Team A goals from `(Team A, Team B)` and Team B goals from `(Team B, Team A)`.
 
 ## Current Performance
 
 Latest validation results:
 
 - Validation Accuracy: **60.8%**
-- Log Loss: **0.866**
+- Log Loss: **0.865**
+- Score MAE: **0.954**
 
 Evaluation is performed using a chronological train/test split to better reflect real-world forecasting scenarios.
 

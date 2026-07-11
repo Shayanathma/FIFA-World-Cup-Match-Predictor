@@ -15,7 +15,8 @@ A machine learning-based international football match predictor that uses Elo ra
 - XGBoost score regressor for expected goals
 - Poisson score matrix for most likely scoreline
 - Chronological training pipeline to prevent future-data leakage
-- Command-line interface for training and match prediction
+- FastAPI backend for match prediction
+- Service layer ready for tournament simulation and evaluation workflows
 
 ## Data Source
 
@@ -27,55 +28,154 @@ The dataset contains international football match results dating back to 1872 an
 
 ## Setup
 
+Backend dependencies:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Usage
-
-
-### Train the Model:
+Frontend dependencies:
 
 ```bash
-worldcup-predict train
+cd frotnend
+npm install
 ```
 
-Download the latest datasets and retrain:
+## Backend Usage
+
+### Run the API
 
 ```bash
-worldcup-predict train --force-download
+uvicorn worldcup_predictor.api.main:app --reload
 ```
 
-Downloaded datasets are cached locally under `data_cache/` and reused on future training runs unless `--force-download` is specified.
+The API runs at `http://127.0.0.1:8000` by default.
 
-### Predict a Match:
+### Endpoints
+
 ```bash
-worldcup-predict Argentina France
-worldcup-predict "Saudi Arabia" Spain
+GET /teams
+POST /predict
 ```
 
-### Example:
-```bash
-worldcup-predict Argentina Austria
-```
-Output:
+`GET /teams` returns the frontend-supported 2026 quarter-finalists:
 
 ```text
-Argentina vs Austria
-
-Argentina win  78.8%
-Draw           11.7%
-Austria win     9.5%
-
-Argentina expected goals  2.34
-Austria expected goals    0.76
-Predicted score         Argentina 2-1 Austria
-Score probability         12.3%
-
-PICK: Argentina win (78.8%)
+France
+Morocco
+Spain
+Belgium
+England
+Norway
+Argentina
+Switzerland
 ```
+
+`POST /predict` accepts:
+
+```json
+{
+  "team_a": "France",
+  "team_b": "Morocco"
+}
+```
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"team_a": "France", "team_b": "Morocco"}'
+```
+
+Response shape:
+
+```json
+{
+  "team_a": "France",
+  "team_b": "Morocco",
+  "winner": "France",
+  "win_probability": 0.61,
+  "draw_probability": 0.22,
+  "loss_probability": 0.17,
+  "team_a_expected_goals": 1.8,
+  "team_b_expected_goals": 0.9,
+  "most_likely_score": {
+    "team_a_goals": 2,
+    "team_b_goals": 1
+  },
+  "most_likely_score_probability": 0.11,
+  "team_a_recent_form": [
+    {
+      "opponent": "Spain",
+      "result": "W",
+      "score": "2-1"
+    }
+  ],
+  "team_b_recent_form": [
+    {
+      "opponent": "Belgium",
+      "result": "D",
+      "score": "1-1"
+    }
+  ],
+  "head_to_head": [
+    {
+      "date": "2024-01-01",
+      "score": "France 2-0 Morocco",
+      "winner": "France"
+    }
+  ]
+}
+```
+
+If no trained artifacts exist, the backend trains models on first prediction. Downloaded datasets are cached locally under `data_cache/`.
+
+### Local Model Training
+
+The public app is API-driven, but local model training can be run from your laptop:
+
+```bash
+worldcup-train-model
+worldcup-train-model --force-download
+```
+
+Use `--force-download` when you want to refresh the GitHub CSV cache before creating new model artifacts.
+
+## Frontend Usage
+
+Create a local frontend environment file:
+
+```bash
+cd frontend
+cp .env.example .env
+```
+
+Set the backend URL:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+BACKEND_CORS_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+```
+
+Run the React app:
+
+```bash
+cd frotnend
+npm run dev
+```
+
+Build for production:
+
+```bash
+cd frotnend
+npm run build
+```
+
+The frontend is designed for Vercel. Set `VITE_API_BASE_URL` in Vercel to the deployed Render backend URL.
+Set `BACKEND_CORS_ORIGINS` in Render to the deployed Vercel frontend URL.
 
 ## Model
 
@@ -95,6 +195,14 @@ Version 2 uses:
 - A Poisson probability distribution for score prediction
 
 The classifier and regressor reuse the same feature engineering and chronological train/test split. During prediction, the same score regressor predicts Team A goals from `(Team A, Team B)` and Team B goals from `(Team B, Team A)`.
+
+## Architecture
+
+- `model.py`: training, model loading, team validation, and raw ML predictions
+- `services/prediction.py`: business orchestration, allowed teams, winner derivation, and display-only match history
+- `api/schemas.py`: Pydantic request and response models
+- `api/routes.py`: HTTP endpoints that call the service layer
+- `api/main.py`: FastAPI app factory
 
 ## Current Performance
 

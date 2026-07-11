@@ -18,15 +18,14 @@ ENV/
 build/
 dist/
 *.egg-info/
+node_modules/
+.vite/
 
 # Runtime data and trained model artifacts
 data_cache/
-artifacts/
-*.joblib
 
 # Local environment files
 .env
-.env.*
 
 # IDE/editor files
 .vscode/

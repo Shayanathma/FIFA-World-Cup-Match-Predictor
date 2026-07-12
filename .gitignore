@@ -21,11 +21,16 @@ dist/
 node_modules/
 .vite/
 
-# Runtime data and trained model artifacts
+# Runtime data and generated model output
 data_cache/
+src/worldcup_predictor/artifacts/*
+!src/worldcup_predictor/artifacts/metadata.joblib
+!src/worldcup_predictor/artifacts/xgb_model.joblib
+!src/worldcup_predictor/artifacts/xgb_score_model.joblib
 
 # Local environment files
 .env
+frontend/.env
 
 # IDE/editor files
 .vscode/

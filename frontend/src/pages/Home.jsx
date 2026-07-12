@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, RotateCcw } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import BracketSelector from "../components/BracketSelector.jsx";
 import ChampionCard from "../components/ChampionCard.jsx";
 import Footer from "../components/Footer.jsx";
@@ -8,7 +8,7 @@ import Hero from "../components/Hero.jsx";
 import LoadingCard, { loadingMessages } from "../components/LoadingCard.jsx";
 import MatchCard from "../components/MatchCard.jsx";
 import Navbar from "../components/Navbar.jsx";
-import { fixtureTeams, quarterFinalFixtures, semiFinalSlots } from "../data/bracket.js";
+import { fixtureTeams, semiFinalFixtures } from "../data/bracket.js";
 import { getTeams, predictMatch } from "../services/api.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,62 +50,39 @@ function SectionHeader({ eyebrow, title, description }) {
 
 export default function Home() {
   const predictionRef = useRef(null);
-  const quarterSectionRef = useRef(null);
+  const semiSectionRef = useRef(null);
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [error, setError] = useState("");
   const [availableTeams, setAvailableTeams] = useState([]);
-  const [quarterPredictions, setQuarterPredictions] = useState([]);
-
-  const [semiSelections, setSemiSelections] = useState({
-    sf1: { left: "France", right: "Belgium" },
-    sf2: { left: "England", right: "Argentina" },
-  });
   const [semiPredictions, setSemiPredictions] = useState({});
-  const [semiLoading, setSemiLoading] = useState({});
 
   const [finalSelection, setFinalSelection] = useState({ left: "", right: "" });
   const [finalPrediction, setFinalPrediction] = useState(null);
   const [finalLoading, setFinalLoading] = useState(false);
 
-  const quarterById = useMemo(() => {
-    return Object.fromEntries(quarterFinalFixtures.map((fixture) => [fixture.id, fixture]));
-  }, []);
+  const finalOptions = {
+    left: semiPredictions.sf1 ? fixtureTeams(semiFinalFixtures[0]) : [],
+    right: semiPredictions.sf2 ? fixtureTeams(semiFinalFixtures[1]) : [],
+  };
 
-  const semiOptions = useMemo(() => {
-    return Object.fromEntries(
-      semiFinalSlots.map((slot) => [
-        slot.id,
-        {
-          left: fixtureTeams(quarterById[slot.sources[0]]),
-          right: fixtureTeams(quarterById[slot.sources[1]]),
-        },
-      ]),
-    );
-  }, [quarterById]);
-
-  const finalOptions = useMemo(() => {
-    const sf1 = semiPredictions.sf1
-      ? [semiSelections.sf1.left, semiSelections.sf1.right]
-      : [];
-    const sf2 = semiPredictions.sf2
-      ? [semiSelections.sf2.left, semiSelections.sf2.right]
-      : [];
-    return { left: sf1, right: sf2 };
-  }, [semiPredictions, semiSelections]);
-
-  const showSemiSection = quarterPredictions.length === quarterFinalFixtures.length;
+  const showSemiSection = Object.keys(semiPredictions).length > 0;
   const showFinalSection = Boolean(semiPredictions.sf1 && semiPredictions.sf2);
   const champion = finalPrediction?.winner && finalPrediction.winner !== "Draw"
     ? finalPrediction.winner
     : null;
 
-  async function runQuarterFinals() {
+  function bracketWinner(prediction, fallback) {
+    return prediction.winner === prediction.team_a || prediction.winner === prediction.team_b
+      ? prediction.winner
+      : fallback;
+  }
+
+  async function runSemiFinals() {
     setStarted(true);
     setLoading(true);
     setError("");
-    setQuarterPredictions([]);
     setSemiPredictions({});
     setFinalPrediction(null);
     setFinalSelection({ left: "", right: "" });
@@ -123,26 +100,33 @@ export default function Home() {
 
       const teams = await teamsPromise;
       setAvailableTeams(teams);
-      const fixtureTeamsAreAvailable = quarterFinalFixtures.every(
+      const fixtureTeamsAreAvailable = semiFinalFixtures.every(
         (fixture) => teams.includes(fixture.teamA) && teams.includes(fixture.teamB),
       );
       if (!fixtureTeamsAreAvailable) {
-        throw new Error("The backend team list does not include every quarter-final fixture.");
+        throw new Error("The backend team list does not include every semi-final fixture.");
       }
 
       setLoading(false);
 
-      for (let index = 0; index < quarterFinalFixtures.length; index += 1) {
-        const fixture = quarterFinalFixtures[index];
+      const nextSemiPredictions = {};
+      for (let index = 0; index < semiFinalFixtures.length; index += 1) {
+        const fixture = semiFinalFixtures[index];
         const prediction = await predictMatch(fixture.teamA, fixture.teamB);
-        setQuarterPredictions((current) => [...current, { fixture, prediction }]);
+        nextSemiPredictions[fixture.id] = prediction;
+        setSemiPredictions((current) => ({ ...current, [fixture.id]: prediction }));
         if (index === 0) {
           window.requestAnimationFrame(() => {
-            quarterSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            semiSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
           });
         }
         await sleep(320);
       }
+
+      setFinalSelection({
+        left: bracketWinner(nextSemiPredictions.sf1, semiFinalFixtures[0].teamA),
+        right: bracketWinner(nextSemiPredictions.sf2, semiFinalFixtures[1].teamA),
+      });
     } catch (requestError) {
       setLoading(false);
       setError(
@@ -150,49 +134,6 @@ export default function Home() {
           requestError?.message ||
           "Unable to reach the prediction API.",
       );
-    }
-  }
-
-  function updateSemiSelection(slotId, side, value) {
-    setSemiSelections((current) => ({
-      ...current,
-      [slotId]: {
-        ...current[slotId],
-        [side]: value,
-      },
-    }));
-    setSemiPredictions((current) => {
-      const next = { ...current };
-      delete next[slotId];
-      return next;
-    });
-    setFinalPrediction(null);
-  }
-
-  function bracketWinner(prediction, fallback) {
-    return prediction.winner === prediction.team_a || prediction.winner === prediction.team_b
-      ? prediction.winner
-      : fallback;
-  }
-
-  async function predictSemi(slotId) {
-    const selection = semiSelections[slotId];
-    if (!selection.left || !selection.right || selection.left === selection.right) return;
-    setSemiLoading((current) => ({ ...current, [slotId]: true }));
-    setError("");
-    try {
-      const prediction = await predictMatch(selection.left, selection.right);
-      const advancingTeam = bracketWinner(prediction, selection.left);
-      setSemiPredictions((current) => ({ ...current, [slotId]: prediction }));
-      setFinalPrediction(null);
-      setFinalSelection((current) => ({
-        left: slotId === "sf1" ? advancingTeam : current.left,
-        right: slotId === "sf2" ? advancingTeam : current.right,
-      }));
-    } catch (requestError) {
-      setError(requestError?.response?.data?.detail || requestError?.message || "Unable to predict semi-final.");
-    } finally {
-      setSemiLoading((current) => ({ ...current, [slotId]: false }));
     }
   }
 
@@ -213,7 +154,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-pitch text-textPrimary">
       <Navbar />
-      <Hero onViewPredictions={runQuarterFinals} />
+      <Hero onViewPredictions={runSemiFinals} />
 
       <main ref={predictionRef} className="bg-pitch py-14 sm:py-20">
         <div className="section-shell space-y-14">
@@ -221,65 +162,28 @@ export default function Home() {
             {started && loading && <LoadingCard activeIndex={loadingIndex} />}
           </AnimatePresence>
 
-          <ErrorBanner message={error} onRetry={quarterPredictions.length === 0 ? runQuarterFinals : undefined} />
-
-          {quarterPredictions.length > 0 && (
-            <section ref={quarterSectionRef}>
-              <SectionHeader
-                eyebrow="Quarter Finals"
-                title="Predictions"
-                description={`Four official quarter-final fixtures, revealed one by one from the backend model. ${availableTeams.length} selectable teams loaded from the API.`}
-              />
-              <div className="grid items-start gap-5 lg:grid-cols-2">
-                {quarterPredictions.map(({ fixture, prediction }, index) => (
-                  <MatchCard
-                    key={fixture.id}
-                    label={fixture.label}
-                    prediction={prediction}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+          <ErrorBanner message={error} onRetry={!showSemiSection ? runSemiFinals : undefined} />
 
           {showSemiSection && (
-            <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <section ref={semiSectionRef}>
               <SectionHeader
                 eyebrow="Semi Finals"
-                title="Build the next round"
-                description="Select one valid winner from each quarter-final path, then run the backend model for each semi-final."
+                title="Predictions"
+                description={`Two semi-final fixtures, revealed one by one from the backend model. ${availableTeams.length} selectable teams loaded from the API.`}
               />
-              <div className="space-y-6">
-                {semiFinalSlots.map((slot) => (
-                  <div key={slot.id} className="space-y-5">
-                    <BracketSelector
-                      eyebrow={slot.label}
-                      title={`${semiSelections[slot.id].left} vs ${semiSelections[slot.id].right}`}
-                      description="Choose the two teams advancing from the linked quarter-finals."
-                      leftLabel={`${quarterById[slot.sources[0]].teamA} vs ${quarterById[slot.sources[0]].teamB}`}
-                      rightLabel={`${quarterById[slot.sources[1]].teamA} vs ${quarterById[slot.sources[1]].teamB}`}
-                      leftValue={semiSelections[slot.id].left}
-                      rightValue={semiSelections[slot.id].right}
-                      leftOptions={semiOptions[slot.id].left}
-                      rightOptions={semiOptions[slot.id].right}
-                      onLeftChange={(value) => updateSemiSelection(slot.id, "left", value)}
-                      onRightChange={(value) => updateSemiSelection(slot.id, "right", value)}
-                      onPredict={() => predictSemi(slot.id)}
-                      loading={semiLoading[slot.id]}
-                      disabled={semiSelections[slot.id].left === semiSelections[slot.id].right}
+              <div className="grid items-start gap-5 lg:grid-cols-2">
+                {semiFinalFixtures.map((fixture, index) =>
+                  semiPredictions[fixture.id] ? (
+                    <MatchCard
+                      key={fixture.id}
+                      label={fixture.label}
+                      prediction={semiPredictions[fixture.id]}
+                      index={index}
                     />
-                    {semiPredictions[slot.id] && (
-                      <MatchCard
-                        label={slot.label}
-                        prediction={semiPredictions[slot.id]}
-                        index={0}
-                      />
-                    )}
-                  </div>
-                ))}
+                  ) : null,
+                )}
               </div>
-            </motion.section>
+            </section>
           )}
 
           {showFinalSection && (
@@ -287,7 +191,7 @@ export default function Home() {
               <SectionHeader
                 eyebrow="Final"
                 title="Predict the final"
-                description="Choose the two semi-final winners and run the last match prediction."
+                description="Choose one team from each semi-final path and run the last match prediction."
               />
               <BracketSelector
                 eyebrow="World Cup Final"

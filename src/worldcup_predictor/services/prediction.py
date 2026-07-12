@@ -8,15 +8,11 @@ from worldcup_predictor.data import load_dataset
 from worldcup_predictor.model import predict, validate_team
 
 
-QUARTER_FINALISTS = (
+FRONTEND_TEAMS = (
     "France",
-    "Morocco",
     "Spain",
-    "Belgium",
     "England",
-    "Norway",
     "Argentina",
-    "Switzerland",
 )
 
 
@@ -58,11 +54,11 @@ class MatchPrediction:
 
 
 def get_available_teams() -> list[str]:
-    return list(QUARTER_FINALISTS)
+    return list(FRONTEND_TEAMS)
 
 
 def _validate_frontend_team(team: str) -> str:
-    return validate_team(team, list(QUARTER_FINALISTS))
+    return validate_team(team, list(FRONTEND_TEAMS))
 
 
 def _winner_from_probabilities(

@@ -88,16 +88,12 @@ def _fixture_matches() -> pd.DataFrame:
     )
 
 
-def test_get_available_teams_returns_quarter_finalists():
+def test_get_available_teams_returns_frontend_teams():
     assert prediction_service.get_available_teams() == [
         "France",
-        "Morocco",
         "Spain",
-        "Belgium",
         "England",
-        "Norway",
         "Argentina",
-        "Switzerland",
     ]
 
 
@@ -120,10 +116,10 @@ def test_predict_match_maps_raw_prediction_to_business_response(monkeypatch):
     )
     monkeypatch.setattr(prediction_service, "load_dataset", _fixture_matches)
 
-    prediction = prediction_service.predict_match("Argentina", "Switzerland")
+    prediction = prediction_service.predict_match("Argentina", "England")
 
     assert prediction.team_a == "Argentina"
-    assert prediction.team_b == "Switzerland"
+    assert prediction.team_b == "England"
     assert prediction.winner == "Argentina"
     assert prediction.most_likely_score.team_a_goals == 2
     assert prediction.most_likely_score.team_b_goals == 1
@@ -142,15 +138,12 @@ def test_predict_match_maps_raw_prediction_to_business_response(monkeypatch):
         "W",
     ]
     assert prediction.team_a_recent_form[-1].score == "2-0"
-    assert [match.date for match in prediction.head_to_head] == [
-        "2024-05-01",
-        "2024-08-01",
-    ]
-    assert prediction.head_to_head[0].score == "Argentina 1-1 Switzerland"
-    assert prediction.head_to_head[0].winner == "Draw"
+    assert prediction.team_b_recent_form[-1].opponent == "Switzerland"
+    assert prediction.team_b_recent_form[-1].result == "W"
+    assert prediction.head_to_head == []
 
 
-def test_predict_match_rejects_team_outside_quarter_finalists():
+def test_predict_match_rejects_team_outside_frontend_teams():
     with pytest.raises(ValueError, match="Unknown team"):
         prediction_service.predict_match("Brazil", "Argentina")
 

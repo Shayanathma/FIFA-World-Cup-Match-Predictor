@@ -20,7 +20,7 @@ export default function Hero({ onViewPredictions }) {
             <span className="block">Match Predictor</span>
           </h1>
           <p className="mt-7 max-w-3xl text-base leading-8 text-textSecondary sm:text-xl sm:leading-9">
-            Machine-learning predictions for every knockout fixture with expected goals,
+            Machine-learning predictions for 2026 FIFA World Cup Semi-finals and Final matches with expected goals,
             recent form, head-to-head context, and a bracket that plays out one round at a time.
           </p>
           <button

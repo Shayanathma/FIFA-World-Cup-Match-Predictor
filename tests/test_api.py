@@ -9,7 +9,7 @@ from worldcup_predictor.services.prediction import (
 )
 
 
-def test_get_teams_endpoint_returns_quarter_finalists():
+def test_get_teams_endpoint_returns_frontend_teams():
     client = TestClient(create_app())
 
     response = client.get("/teams")
@@ -17,13 +17,9 @@ def test_get_teams_endpoint_returns_quarter_finalists():
     assert response.status_code == 200
     assert response.json() == [
         "France",
-        "Morocco",
         "Spain",
-        "Belgium",
         "England",
-        "Norway",
         "Argentina",
-        "Switzerland",
     ]
 
 

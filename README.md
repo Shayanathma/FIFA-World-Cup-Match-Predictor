@@ -2,8 +2,7 @@
 
 A machine learning-based international football match predictor that uses Elo ratings, historical match results, XGBoost classification, and XGBoost score regression to estimate win/draw/loss probabilities and likely scorelines for FIFA World Cup-style fixtures.
 
-> **Project Status:** In Progress  
-> This project is actively being developed and improved. New features, additional data sources, model enhancements, and evaluation methods are being added as the project evolves.
+Check out the live project: https://fifa-world-cup-match-predictor.vercel.app
 
 ## Features
 
@@ -39,7 +38,7 @@ pip install -e ".[dev]"
 Frontend dependencies:
 
 ```bash
-cd frotnend
+cd frontend
 npm install
 ```
 
@@ -60,76 +59,8 @@ GET /teams
 POST /predict
 ```
 
-`GET /teams` returns the frontend-supported 2026 quarter-finalists:
-
-```text
-France
-Morocco
-Spain
-Belgium
-England
-Norway
-Argentina
-Switzerland
-```
-
-`POST /predict` accepts:
-
-```json
-{
-  "team_a": "France",
-  "team_b": "Morocco"
-}
-```
-
-Example:
-
-```bash
-curl -X POST http://127.0.0.1:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"team_a": "France", "team_b": "Morocco"}'
-```
-
-Response shape:
-
-```json
-{
-  "team_a": "France",
-  "team_b": "Morocco",
-  "winner": "France",
-  "win_probability": 0.61,
-  "draw_probability": 0.22,
-  "loss_probability": 0.17,
-  "team_a_expected_goals": 1.8,
-  "team_b_expected_goals": 0.9,
-  "most_likely_score": {
-    "team_a_goals": 2,
-    "team_b_goals": 1
-  },
-  "most_likely_score_probability": 0.11,
-  "team_a_recent_form": [
-    {
-      "opponent": "Spain",
-      "result": "W",
-      "score": "2-1"
-    }
-  ],
-  "team_b_recent_form": [
-    {
-      "opponent": "Belgium",
-      "result": "D",
-      "score": "1-1"
-    }
-  ],
-  "head_to_head": [
-    {
-      "date": "2024-01-01",
-      "score": "France 2-0 Morocco",
-      "winner": "France"
-    }
-  ]
-}
-```
+`GET /teams` returns the frontend-supported 2026 knockout teams. 
+`POST /predict` accepts two teams and returns the prediction along with other data about the teams.
 
 If no trained artifacts exist, the backend trains models on first prediction. Downloaded datasets are cached locally under `data_cache/`.
 
@@ -157,29 +88,25 @@ Set the backend URL:
 
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
-BACKEND_CORS_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 ```
 
 Run the React app:
 
 ```bash
-cd frotnend
+cd frontend
 npm run dev
 ```
 
 Build for production:
 
 ```bash
-cd frotnend
+cd frontend
 npm run build
 ```
 
-The frontend is designed for Vercel. Set `VITE_API_BASE_URL` in Vercel to the deployed Render backend URL.
-Set `BACKEND_CORS_ORIGINS` in Render to the deployed Vercel frontend URL.
-
 ## Model
 
-Version 2 uses:
+Version 3 uses:
 
 - Historical international match results (`results.csv`)
 - Penalty shootout winners (`shootouts.csv`) to adjust knockout draws into wins/losses
@@ -195,14 +122,6 @@ Version 2 uses:
 - A Poisson probability distribution for score prediction
 
 The classifier and regressor reuse the same feature engineering and chronological train/test split. During prediction, the same score regressor predicts Team A goals from `(Team A, Team B)` and Team B goals from `(Team B, Team A)`.
-
-## Architecture
-
-- `model.py`: training, model loading, team validation, and raw ML predictions
-- `services/prediction.py`: business orchestration, allowed teams, winner derivation, and display-only match history
-- `api/schemas.py`: Pydantic request and response models
-- `api/routes.py`: HTTP endpoints that call the service layer
-- `api/main.py`: FastAPI app factory
 
 ## Current Performance
 

@@ -124,6 +124,8 @@ def test_predict_match_maps_raw_prediction_to_business_response(monkeypatch):
     assert prediction.most_likely_score.team_a_goals == 2
     assert prediction.most_likely_score.team_b_goals == 1
     assert [match.opponent for match in prediction.team_a_recent_form] == [
+        "Brazil",
+        "Chile",
         "Uruguay",
         "France",
         "Switzerland",
@@ -131,6 +133,8 @@ def test_predict_match_maps_raw_prediction_to_business_response(monkeypatch):
         "Switzerland",
     ]
     assert [match.result for match in prediction.team_a_recent_form] == [
+        "W",
+        "D",
         "L",
         "W",
         "D",

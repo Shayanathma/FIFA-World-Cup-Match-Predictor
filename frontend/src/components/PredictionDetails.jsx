@@ -162,8 +162,8 @@ export default function PredictionDetails({ prediction }) {
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <FormDots title={`Last 5 · ${prediction.team_a}`} items={prediction.team_a_recent_form} />
-        <FormDots title={`Last 5 · ${prediction.team_b}`} items={prediction.team_b_recent_form} />
+        <FormDots title={`Last 10 · ${prediction.team_a}`} items={prediction.team_a_recent_form} />
+        <FormDots title={`Last 10 · ${prediction.team_b}`} items={prediction.team_b_recent_form} />
       </div>
 
       <HeadToHeadTable items={prediction.head_to_head} />

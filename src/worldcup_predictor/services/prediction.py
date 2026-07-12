@@ -96,7 +96,7 @@ def _format_date(value: pd.Timestamp) -> str:
     return value.date().isoformat()
 
 
-def _recent_form(matches: pd.DataFrame, team: str, limit: int = 5) -> list[RecentFormMatch]:
+def _recent_form(matches: pd.DataFrame, team: str, limit: int = 10) -> list[RecentFormMatch]:
     team_matches = matches[
         (matches["home_team"] == team) | (matches["away_team"] == team)
     ].sort_values("date")

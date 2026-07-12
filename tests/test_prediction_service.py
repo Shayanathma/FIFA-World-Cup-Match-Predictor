@@ -143,6 +143,62 @@ def test_predict_match_maps_raw_prediction_to_business_response(monkeypatch):
     assert prediction.head_to_head == []
 
 
+def test_predict_match_returns_head_to_head_newest_first(monkeypatch):
+    monkeypatch.setattr(
+        prediction_service,
+        "predict",
+        lambda team_a, team_b: {
+            "team_a": team_a,
+            "team_b": team_b,
+            "win": 0.55,
+            "draw": 0.25,
+            "loss": 0.20,
+            "team_a_expected_goals": 1.7,
+            "team_b_expected_goals": 0.9,
+            "likely_team_a_goals": 2,
+            "likely_team_b_goals": 1,
+            "likely_score_probability": 0.11,
+        },
+    )
+    monkeypatch.setattr(
+        prediction_service,
+        "load_dataset",
+        lambda: pd.DataFrame(
+            [
+                {
+                    "date": pd.Timestamp("2024-01-01"),
+                    "home_team": "France",
+                    "away_team": "Argentina",
+                    "home_score": 1,
+                    "away_score": 0,
+                },
+                {
+                    "date": pd.Timestamp("2024-04-01"),
+                    "home_team": "Argentina",
+                    "away_team": "France",
+                    "home_score": 2,
+                    "away_score": 1,
+                },
+                {
+                    "date": pd.Timestamp("2024-08-01"),
+                    "home_team": "France",
+                    "away_team": "Argentina",
+                    "home_score": 0,
+                    "away_score": 3,
+                },
+            ]
+        ),
+    )
+
+    prediction = prediction_service.predict_match("Argentina", "France")
+
+    assert [match.date for match in prediction.head_to_head] == [
+        "2024-08-01",
+        "2024-04-01",
+        "2024-01-01",
+    ]
+
+
 def test_predict_match_rejects_team_outside_frontend_teams():
     with pytest.raises(ValueError, match="Unknown team"):
         prediction_service.predict_match("Brazil", "Argentina")

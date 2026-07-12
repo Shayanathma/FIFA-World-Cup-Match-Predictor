@@ -134,7 +134,7 @@ def _head_to_head(
             & (matches["away_team"] == team_a)
         )
     ].sort_values("date")
-    recent_meetings = h2h_matches.tail(limit)
+    recent_meetings = h2h_matches.tail(limit).sort_values("date", ascending=False)
 
     meetings: list[HeadToHeadMatch] = []
     for _, match in recent_meetings.iterrows():

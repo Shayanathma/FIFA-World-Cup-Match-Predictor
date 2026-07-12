@@ -191,6 +191,10 @@ def train(force_download: bool = False) -> TrainingResult:
 @lru_cache(maxsize=1)
 def load_bundle() -> PredictorBundle:
     print("7. Entered load_bundle()", flush=True)
+    print(f"ARTIFACT_DIR: {ARTIFACT_DIR}", flush=True)
+    print(f"MODEL_PATH: {MODEL_PATH}", flush=True)
+    print(f"SCORE_MODEL_PATH: {SCORE_MODEL_PATH}", flush=True)
+    print(f"METADATA_PATH: {METADATA_PATH}", flush=True)
     print(f"MODEL_PATH exists: {MODEL_PATH.exists()}", flush=True)
     print(f"SCORE_MODEL_PATH exists: {SCORE_MODEL_PATH.exists()}", flush=True)
     print(f"METADATA_PATH exists: {METADATA_PATH.exists()}", flush=True)

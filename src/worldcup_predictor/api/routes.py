@@ -22,7 +22,9 @@ def get_teams() -> list[str]:
 @router.post("/predict", response_model=PredictionResponse)
 def predict_match(request: PredictionRequest) -> PredictionResponse:
     try:
+        print("===== ENTERED /predict =====", flush=True)
         prediction = prediction_service.predict_match(request.team_a, request.team_b)
+        print("===== EXITING /predict =====", flush=True)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -172,10 +172,13 @@ def _prediction_context(team_a: str, team_b: str) -> tuple[
 def predict_match(team_a: str, team_b: str) -> MatchPrediction:
     resolved_team_a = _validate_frontend_team(team_a)
     resolved_team_b = _validate_frontend_team(team_b)
+    print("1. Teams validated", flush=True)
     if resolved_team_a == resolved_team_b:
         raise ValueError("Choose two different teams.")
 
+    print("2. Calling model.predict()", flush=True)
     raw_prediction = predict(resolved_team_a, resolved_team_b)
+    print("3. Model prediction complete", flush=True)
     winner = _winner_from_probabilities(
         raw_prediction["team_a"],
         raw_prediction["team_b"],
@@ -183,11 +186,14 @@ def predict_match(team_a: str, team_b: str) -> MatchPrediction:
         raw_prediction["draw"],
         raw_prediction["loss"],
     )
+    print("4. Building prediction context", flush=True)
     team_a_recent_form, team_b_recent_form, head_to_head = _prediction_context(
         raw_prediction["team_a"],
         raw_prediction["team_b"],
     )
+    print("5. Prediction context built", flush=True)
 
+    print("6. Returning MatchPrediction", flush=True)
     return MatchPrediction(
         team_a=raw_prediction["team_a"],
         team_b=raw_prediction["team_b"],

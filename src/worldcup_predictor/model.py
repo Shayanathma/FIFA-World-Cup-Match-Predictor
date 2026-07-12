@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from difflib import get_close_matches
+from functools import lru_cache
 
 import joblib
 import numpy as np
@@ -187,12 +188,19 @@ def train(force_download: bool = False) -> TrainingResult:
     )
 
 
+@lru_cache(maxsize=1)
 def load_bundle() -> PredictorBundle:
+    print("7. Entered load_bundle()", flush=True)
+    print(f"MODEL_PATH exists: {MODEL_PATH.exists()}", flush=True)
+    print(f"SCORE_MODEL_PATH exists: {SCORE_MODEL_PATH.exists()}", flush=True)
+    print(f"METADATA_PATH exists: {METADATA_PATH.exists()}", flush=True)
     if not MODEL_PATH.exists() or not SCORE_MODEL_PATH.exists() or not METADATA_PATH.exists():
         train()
+    print("8. Loading joblib artifacts", flush=True)
     model = joblib.load(MODEL_PATH)
     score_model = joblib.load(SCORE_MODEL_PATH)
     metadata = joblib.load(METADATA_PATH)
+    print("9. Joblib artifacts loaded", flush=True)
     return PredictorBundle(
         model=model,
         score_model=score_model,
@@ -214,9 +222,12 @@ def validate_team(team: str, teams: list[str]) -> str:
 
 
 def predict(team_a: str, team_b: str) -> dict[str, float]:
+    print("10. Entered model.predict()", flush=True)
     bundle = load_bundle()
+    print("11. Bundle loaded", flush=True)
     resolved_a = validate_team(team_a, bundle.teams)
     resolved_b = validate_team(team_b, bundle.teams)
+    print("12. Teams validated", flush=True)
     if resolved_a == resolved_b:
         raise ValueError("Choose two different teams.")
     features = build_prediction_features(
@@ -225,19 +236,25 @@ def predict(team_a: str, team_b: str) -> dict[str, float]:
         resolved_a,
         resolved_b,
     )
+    print("13. Forward features built", flush=True)
     reverse_features = build_prediction_features(
         bundle.state,
         bundle.feature_names,
         resolved_b,
         resolved_a,
     )
+    print("14. Reverse features built", flush=True)
     probabilities = bundle.model.predict_proba(features)[0]
+    print("15. Outcome model complete", flush=True)
     team_a_expected_goals = float(np.clip(bundle.score_model.predict(features)[0], 0.0, None))
     team_b_expected_goals = float(np.clip(bundle.score_model.predict(reverse_features)[0], 0.0, None))
+    print("16. Score model complete", flush=True)
     likely_a_goals, likely_b_goals, likely_score_probability = most_likely_score(
         team_a_expected_goals,
         team_b_expected_goals,
     )
+    print("17. Poisson score complete", flush=True)
+    print("18. Returning prediction dictionary", flush=True)
     return {
         "team_a": resolved_a,
         "team_b": resolved_b,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from urllib.request import urlretrieve
+from functools import lru_cache
 
 import pandas as pd
 
@@ -40,6 +41,7 @@ def load_shootouts(force_download: bool = False) -> pd.DataFrame:
     return shootouts.sort_values("date").reset_index(drop=True)
 
 
+@lru_cache(maxsize=1)
 def load_dataset(force_download: bool = False) -> pd.DataFrame:
     results = load_results(force_download)
     results, removed_missing_scores = filter_missing_scores(results)

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-DATA_CACHE_DIR = PACKAGE_ROOT / "data_cache"
-ARTIFACT_DIR = PACKAGE_ROOT / "artifacts"
+PACKAGE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = PACKAGE_DIR.parents[1]
+
+DATA_CACHE_DIR = PROJECT_ROOT / "data_cache"
+ARTIFACT_DIR = PACKAGE_DIR / "artifacts"
 MODEL_PATH = ARTIFACT_DIR / "xgb_model.joblib"
 SCORE_MODEL_PATH = ARTIFACT_DIR / "xgb_score_model.joblib"
 METADATA_PATH = ARTIFACT_DIR / "metadata.joblib"

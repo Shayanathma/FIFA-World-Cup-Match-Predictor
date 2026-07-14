@@ -39,8 +39,5 @@ def most_likely_score(
     mode_a, mode_b = np.unravel_index(np.argmax(matrix), matrix.shape)
     probability = float(matrix[mode_a, mode_b])
 
-    # Displayed score: round expected goals to the nearest integer
-    predicted_a = int(round(team_a_expected_goals))
-    predicted_b = int(round(team_b_expected_goals))
-
-    return predicted_a, predicted_b, probability
+    # Display the most likely scoreline from the joint Poisson probability matrix
+    return int(mode_a), int(mode_b), probability

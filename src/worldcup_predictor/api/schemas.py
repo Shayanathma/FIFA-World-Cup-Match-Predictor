@@ -25,6 +25,8 @@ class RecentFormMatchResponse(BaseModel):
     opponent: str
     result: str
     score: str
+    date: str
+    competition: str
 
 
 class HeadToHeadMatchResponse(BaseModel):

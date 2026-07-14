@@ -28,6 +28,8 @@ class RecentFormMatch:
     opponent: str
     result: str
     score: str
+    date: str
+    competition: str
 
 
 @dataclass(frozen=True)
@@ -113,6 +115,8 @@ def _recent_form(matches: pd.DataFrame, team: str, limit: int = 10) -> list[Rece
                 opponent=opponent,
                 result=_match_result(team_score, opponent_score),
                 score=f"{team_score}-{opponent_score}",
+                date=_format_date(match["date"]),
+                competition=str(match.get("tournament", "International")),
             )
         )
     return form

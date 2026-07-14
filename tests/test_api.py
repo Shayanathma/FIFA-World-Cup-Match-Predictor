@@ -55,10 +55,22 @@ def test_predict_endpoint_returns_prediction(monkeypatch):
                 probability=0.12,
             ),
             team_a_recent_form=[
-                RecentFormMatch(opponent="Spain", result="W", score="2-1")
+                RecentFormMatch(
+                    opponent="Spain",
+                    result="W",
+                    score="2-1",
+                    date="2024-06-01",
+                    competition="Friendly",
+                )
             ],
             team_b_recent_form=[
-                RecentFormMatch(opponent="Belgium", result="D", score="1-1")
+                RecentFormMatch(
+                    opponent="Belgium",
+                    result="D",
+                    score="1-1",
+                    date="2024-06-02",
+                    competition="UEFA Nations League",
+                )
             ],
             head_to_head=[
                 HeadToHeadMatch(
@@ -93,10 +105,22 @@ def test_predict_endpoint_returns_prediction(monkeypatch):
         "most_likely_score": {"team_a_goals": 2, "team_b_goals": 0},
         "most_likely_score_probability": 0.12,
         "team_a_recent_form": [
-            {"opponent": "Spain", "result": "W", "score": "2-1"}
+            {
+                "opponent": "Spain",
+                "result": "W",
+                "score": "2-1",
+                "date": "2024-06-01",
+                "competition": "Friendly",
+            }
         ],
         "team_b_recent_form": [
-            {"opponent": "Belgium", "result": "D", "score": "1-1"}
+            {
+                "opponent": "Belgium",
+                "result": "D",
+                "score": "1-1",
+                "date": "2024-06-02",
+                "competition": "UEFA Nations League",
+            }
         ],
         "head_to_head": [
             {

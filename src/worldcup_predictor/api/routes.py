@@ -47,6 +47,8 @@ def predict_match(request: PredictionRequest) -> PredictionResponse:
                 opponent=match.opponent,
                 result=match.result,
                 score=match.score,
+                date=match.date,
+                competition=match.competition,
             )
             for match in prediction.team_a_recent_form
         ],
@@ -55,6 +57,8 @@ def predict_match(request: PredictionRequest) -> PredictionResponse:
                 opponent=match.opponent,
                 result=match.result,
                 score=match.score,
+                date=match.date,
+                competition=match.competition,
             )
             for match in prediction.team_b_recent_form
         ],

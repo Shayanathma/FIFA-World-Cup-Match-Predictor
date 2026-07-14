@@ -1,4 +1,5 @@
 import { History } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 function resultTone(result) {
   if (result === "W") return "bg-emerald-500/20 text-emerald-300";
@@ -45,26 +46,65 @@ function MetricTile({ label, value }) {
 }
 
 function FormDots({ title, items }) {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const containerRef = useRef(null);
+  const selectedMatch = selectedIndex === null ? null : items?.[selectedIndex];
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!containerRef.current?.contains(event.target)) {
+        setSelectedIndex(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
+
   return (
-    <div>
+    <div ref={containerRef} className="relative">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary sm:mb-3 sm:text-xs">
         {title}
       </p>
       <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {items?.length ? (
           items.map((match, index) => (
-            <span
+            <button
+              type="button"
               key={`${match.opponent}-${match.score}-${index}`}
-              title={`${match.opponent} ${match.score}`}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black sm:h-9 sm:w-9 sm:text-sm ${resultTone(match.result)}`}
+              onClick={() => setSelectedIndex((current) => (current === index ? null : index))}
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-worldCupGold/50 sm:h-9 sm:w-9 sm:text-sm ${resultTone(match.result)}`}
+              aria-label={`${match.result} against ${match.opponent}`}
             >
               {match.result}
-            </span>
+            </button>
           ))
         ) : (
           <p className="text-sm text-textSecondary">No recent matches.</p>
         )}
       </div>
+      {selectedMatch && (
+        <div className="absolute left-0 top-full z-30 mt-3 w-64 rounded-2xl border border-white/10 bg-[#0B1220] p-4 text-sm shadow-2xl shadow-black/40">
+          <div className="grid gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">Opponent</p>
+              <p className="mt-1 font-bold text-textPrimary">{selectedMatch.opponent}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">Score</p>
+              <p className="mt-1 font-bold text-textPrimary">{selectedMatch.score}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">Date</p>
+              <p className="mt-1 font-bold text-textPrimary">{selectedMatch.date}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">Competition</p>
+              <p className="mt-1 font-bold text-textPrimary">{selectedMatch.competition}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -162,8 +202,8 @@ export default function PredictionDetails({ prediction }) {
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <FormDots title={`Last 10 · ${prediction.team_a}`} items={prediction.team_a_recent_form} />
-        <FormDots title={`Last 10 · ${prediction.team_b}`} items={prediction.team_b_recent_form} />
+        <FormDots title={`Last 10 matches · ${prediction.team_a}`} items={prediction.team_a_recent_form} />
+        <FormDots title={`Last 10 matches · ${prediction.team_b}`} items={prediction.team_b_recent_form} />
       </div>
 
       <HeadToHeadTable items={prediction.head_to_head} />
